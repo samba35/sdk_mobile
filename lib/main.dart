@@ -79,7 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // Example loan request payload. Keys must match the LoanRequest constructor in Kotlin.
     final loanRequest = {
-      "loan_reference": "LN-REF-20251017-1001",
+      "loan_reference": "LN-REF-20251017-1101",
       "client_unique_id": "CUST-20251017-1234",
       "product_id": "MUT-IND-3065",
       "branch_id": "ML1348",

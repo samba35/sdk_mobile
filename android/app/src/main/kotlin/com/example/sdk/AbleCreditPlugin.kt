@@ -13,6 +13,8 @@ import com.ablecredit.sdk.model.LoanData
 import com.ablecredit.sdk.model.BorrowerDetails
 import com.ablecredit.sdk.manager.SdkConfig 
 //import com.ablecredit.sdk.manager.UploadStatusListener
+import com.ablecredit.sdk.model.FileStatus
+import com.ablecredit.sdk.recorder.interfaces.UploadStatusListener
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -204,6 +206,13 @@ class AbleCreditPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
         }
         Log.d(tag, "Recording audio for loan ID: $loanApplicationId")
         val intentContext = activity ?: context
+
+        // val uploadListener = object : UploadStatusListener {
+        //     override fun onStatusChanged(uniqueId: String, status: FileStatus, message: String?) {
+        //         Log.d(tag, "Audio upload status changed for $uniqueId: Status=${status.name}, Message=$message")
+        //     }
+        // }
+
         SdkManager.recordAudio(intentContext, loanApplicationId)
         result.success(null)
     }
