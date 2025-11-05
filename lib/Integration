@@ -1,0 +1,185 @@
+AbleCredit Android SDK — Integration & API Documentation
+Version: 1.0
+Last Updated: October 2025
+
+1. Overview
+This document describes how to integrate the AbleCredit Android SDK (SdkManager) and explains each public API method available to integrators. The content below is derived from the SDK source you provided and contains only actual SDK methods.
+2. Gradle Plugins & Dependencies
+Add these plugins at the top of your module-level Gradle file:
+
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.kapt")
+    id("kotlin-parcelize")
+}
+Required dependencies (inside `dependencies` block):
+
+// Android core
+implementation("androidx.core:core-ktx:1.13.1")
+implementation("androidx.appcompat:appcompat:1.7.0")
+implementation("com.google.android.material:material:1.12.0")
+
+// Room
+implementation("androidx.room:room-runtime:2.6.1")
+implementation("androidx.room:room-ktx:2.6.1")
+kapt("androidx.room:room-compiler:2.6.1")
+
+// Coroutines
+implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
+// WorkManager, Lifecycle
+implementation("androidx.work:work-runtime-ktx:2.9.1")
+implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.2")
+implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
+
+// Networking
+implementation("com.squareup.okhttp3:okhttp:4.12.0")
+implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+implementation("com.squareup.retrofit2:retrofit:2.11.0")
+implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
+// Location
+implementation("com.google.android.gms:play-services-location:21.3.0")
+
+// SDK AAR
+implementation(files("libs/app-release.aar"))
+3. SDK Configuration
+The SDK maintains configuration internally. You can read it via:
+Key
+Value
+Method
+SdkManager.getSdkConfig()
+Returns
+SdkConfig(apiKey, tenantId, userId, baseUrl)
+
+SdkConfig fields:
+Key
+Value
+apiKey
+String? (API key used for authentication)
+tenantId
+String? (Tenant identifier)
+userId
+String? (User identifier)
+baseUrl
+String? (API base URL)
+
+4. initialize()
+Purpose: Initializes the SDK with credentials and configuration. Must be called before invoking any other method.
+Key
+Value
+Method
+SdkManager.initialize(context, apiKey, tenantId, userId, baseUrl, onResult)
+Callback
+onResult(status: Int, message: String) — status 1 = success, 0 = failure
+Behavior
+Validates credentials, sets internal config, and prepares repositories.
+
+
+SdkManager.initialize(
+    context = this,
+    apiKey = “<api_key>”,
+    tenantId = "MUTHOOT-49211173",
+    userId = "shwe@gml.co",
+    baseUrl = "https://col-api-qa.ablecredit.com/api/v2/"
+) { status, message ->
+    if (status == 1) {
+        // SDK initialized successfully
+    } else {
+        // Initialization failed
+    }
+}
+5. createNewLoanCase()
+Purpose: Creates a new loan application using the repository and network layer.
+Key
+Value
+Method
+SdkManager.createNewLoanCase(context, payload: LoanRequest, onResult: (LoanResponse?) -> Unit)
+Threading
+Uses coroutines (Dispatchers.IO → Dispatchers.Main)
+On success
+Returns LoanResponse and shows a Toast
+On failure
+Shows Toast 'Failed to create loan' and returns null
+
+
+LoanRequest(
+    loan_reference = "LN-REF-20251017-0008",
+    client_unique_id = "CUST-20251017-1234",
+    product_id = "MUT-IND-3065",
+    branch_id = "ML1348",
+    source_system = "hotfoot",
+    business_profile = BusinessProfile(
+        product = "LAP",
+        business_model = "Trading",
+        industry = "Fashion Apparel"
+    ),
+    data = LoanData(
+        borrower_details = BorrowerDetails(
+            entity_type = "individual",
+            name = "Shwetanka Srivastava",
+            dob = "24/01/1988",
+            mobile = "8197837043"
+        )
+    )
+)
+Example call:
+SdkManager.createNewLoanCase(this, sampleLoanRequest) { response ->
+    // handle response
+}
+6. recordAudio()
+Purpose: Opens RecorderActivity to record audio for a given loan application. Requires SDK initialization and a valid loanApplicationId.
+Key
+Value
+Method
+SdkManager.recordAudio(context: Context, loanApplicationId: String?)
+Navigates to
+RecorderActivity (extras: APPLICATION_ID, TITLE)
+Behavior
+Adds FLAG_ACTIVITY_NEW_TASK if context is not an Activity; logs call; handles invalid ID.
+
+
+SdkManager.recordAudio(
+    context = this,
+    loanApplicationId = "APP-102930"
+)
+7. capturePhotos()
+Purpose: Launches PhotoActivity to capture borrower or document photos. Displays a short Toast when opening the camera.
+Key
+Value
+Method
+SdkManager.capturePhotos(context: Context, loanApplicationId: String?)
+Navigates to
+PhotoActivity (extras: APPLICATION_ID, TITLE)
+Behavior
+Adds FLAG_ACTIVITY_NEW_TASK for non-Activity contexts; shows Toast.
+
+
+SdkManager.capturePhotos(
+    context = this,
+    loanApplicationId = "APP-102930"
+)
+8. clear()
+Purpose: Clears all SDK configuration and resets initialization state. Useful for logout or switching user sessions.
+Key
+Value
+Method
+SdkManager.clear(context: Context)
+Resets
+apiKey, tenantId, userId, baseUrl, initialized = false
+Toast
+Shows 'SDK cleared successfully'
+
+
+SdkManager.clear(context = this)
+9. Internal helpers (for reference)
+`checkInitialization(context)` — ensures SDK initialized; otherwise shows Toast and returns false.
+`validateCredentials(apiKey, tenantId, userId)` — currently dummy; replace with real API validation if needed.
+10. Notes & Integration Tips
+• Always call `initialize()` before invoking SDK features.
+• Use `clear()` during logout or when switching tenants.
+• Ensure your app requests CAMERA and RECORD_AUDIO permissions.
+• Keep `app-release.aar` in `app/libs/` and reference it properly.
+• SDK uses Retrofit & OkHttp internally for networking.

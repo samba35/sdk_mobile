@@ -1,0 +1,156 @@
+AbleCredit Android SDK — Integration & API 
+Documentation
+Version: 1.0
+Last Updated: November 2025
+1. Overview
+This document describes how to integrate the AbleCredit Android SDK 
+(SdkManager) and details all publicly available SDK methods.
+2. Gradle Plugins & Dependencies
+Add these plugins at the top of your module-level Gradle file:
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.kapt")
+    id("kotlin-parcelize")
+}
+Add the required dependencies:
+// Core libraries
+implementation("androidx.core:core-ktx:1.13.1")
+implementation("androidx.appcompat:appcompat:1.7.0")
+implementation("com.google.android.material:material:1.12.0")
+// Room Database
+implementation("androidx.room:room-runtime:2.6.1")
+implementation("androidx.room:room-ktx:2.6.1")
+kapt("androidx.room:room-compiler:2.6.1")
+// Coroutines
+implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+// Networking
+implementation("com.squareup.okhttp3:okhttp:4.12.0")
+implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+implementation("com.squareup.retrofit2:retrofit:2.11.0")
+implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+// Location
+implementation("com.google.android.gms:play-services-location:21.3.0")
+// SDK AAR
+implementation(files("libs/app-release.aar"))
+3. SDK Configuration
+The SDK maintains configuration internally. You can read it using:
+Key Value
+Method SdkManager.getSdkConfig()
+Returns SdkConfig(apiKey, tenantId, userId, 
+baseUrl)
+SdkConfig fields:
+Key Value
+apiKey String? — API key used for 
+authentication
+tenantId String? — Partner tenant identifier
+userId String? — Logged-in user identifier
+baseUrl String? — API base URL
+4. initialize()
+Purpose: Initializes the SDK with credentials and sets up repositories. Must 
+be called before using any SDK method.
+Key Value
+Method SdkManager.initialize(context, apiKey, 
+tenantId, userId, baseUrl, onResult)
+Callback onResult(status: Int, message: String)
+Behavior Initializes Retrofit client and repository;
+validates input fields.
+SdkManager.initialize(
+    context = this,
+    apiKey = "API_KEY",
+    tenantId = "TENANT_ID",
+    userId = "USER_ID",
+    baseUrl = "https://api.yourdomain.com/"
+) { status, message ->
+    if (status == 1) {
+        // success
+    } else {
+        // failure
+    }
+}
+5. createNewLoanCase()
+Purpose: Creates a new loan application using the backend API via 
+LoanRepository.
+Key Value
+Method SdkManager.createNewLoanCase(cont
+ext, payload: LoanRequest, onResult: 
+(LoanResponse?) -> Unit)
+On success Returns LoanResponse and displays 
+Toast with Loan ID
+On failure Shows Toast 'Failed to create loan' and 
+returns null
+SdkManager.createNewLoanCase(context = this, payload = loanRequest) 
+{ response ->
+    if (response != null) {
+        // Loan created successfully
+    } else {
+        // Creation failed
+    }
+}
+6. recordAudio()
+Purpose: Launches RecorderActivity to record audio for a given loan 
+application. Optionally accepts an UploadStatusListener to receive upload 
+progress or completion events.
+Key Value
+Method SdkManager.recordAudio(context: 
+Context, loanApplicationId: String?, 
+listener: UploadStatusListener? = null)
+Navigates to RecorderActivity (extras: 
+APPLICATION_ID, TITLE)
+Validation Shows Toast if loanApplicationId is null 
+or blank
+Listener If provided, receives onUploadStarted(),
+onUploadProgress(), 
+onUploadCompleted(), 
+onUploadFailed()
+// Example: Recording with listener
+SdkManager.recordAudio(
+    context = this,
+    loanApplicationId = "APP-202511",
+    listener = object : UploadStatusListener {
+        override fun onUploadStarted(id: String) {
+            Log.d("Upload", "Started for $id")
+        }
+        override fun onUploadProgress(id: String, progress: Int) {
+            Log.d("Upload", "Progress $progress% for $id")
+        }
+        override fun onUploadCompleted(id: String) {
+            Log.d("Upload", "Completed for $id")
+        }
+        override fun onUploadFailed(id: String, error: String?) {
+            Log.e("Upload", "Failed for $id: $error")
+        }
+    }
+)
+7. Photo Capture Sections
+These methods open TagActivity for specific sections and fetch tag lists from
+the stored application JSON.
+Key Value
+captureFamilyPhotos()Launches TagActivity for 'lifestyle_tags'
+(Family Photos)
+captureBusinessPhotos()Launches TagActivity for 
+'business_tags' (Business Photos)
+captureCollateralPhotos()Launches TagActivity for 
+'collateral_tags' (Collateral Photos)
+SdkManager.captureFamilyPhotos(context = this, loanApplicationId = "APP-123")
+SdkManager.captureBusinessPhotos(context = this, loanApplicationId = "APP-123")
+SdkManager.captureCollateralPhotos(context = this, loanApplicationId = 
+"APP-123")
+8. clear()
+Purpose: Resets SDK internal state, clearing credentials and configuration.
+Key Value
+Method SdkManager.clear(context: Context)
+Effect Resets apiKey, tenantId, userId, 
+baseUrl and initialized flag
+Toast Displays 'SDK cleared successfully'
+SdkManager.clear(context = this)
+9. Internal Notes & Tips
+• Always call initialize() before using SDK features.
+• Ensure CAMERA, RECORD_AUDIO, and STORAGE permissions are 
+granted.
+• Each capture method internally validates initialization and loan ID.
+• Keep the AAR file inside app/libs/ and update Gradle reference if renamed.
+• Network requests are handled asynchronously using Retrofit + Coroutines.
+• If UploadStatusListener is provided, RecorderActivity will relay live upload
+status.
