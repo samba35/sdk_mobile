@@ -11,13 +11,11 @@ class AbleCreditSdk {
     required String apiKey,
     required String tenantId,
     required String userId,
-    required String baseUrl,
   }) async {
     final result = await _channel.invokeMethod('initialize', {
       'apiKey': apiKey,
       'tenantId': tenantId,
       'userId': userId,
-      'baseUrl': baseUrl,
     });
     return result as Map<dynamic, dynamic>;
   }

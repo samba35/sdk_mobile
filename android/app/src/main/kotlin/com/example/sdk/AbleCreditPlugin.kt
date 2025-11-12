@@ -87,15 +87,14 @@ class AbleCreditPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
         val apiKey = call.argument<String>("apiKey")
         val tenantId = call.argument<String>("tenantId")
         val userId = call.argument<String>("userId")
-        val baseUrl = call.argument<String>("baseUrl")
 
-        if (apiKey.isNullOrBlank() || tenantId.isNullOrBlank() || userId.isNullOrBlank() || baseUrl.isNullOrBlank()) {
-            result.error("INVALID_ARGS", "apiKey, tenantId, userId, and baseUrl must not be empty.", null)
+        if (apiKey.isNullOrBlank() || tenantId.isNullOrBlank() || userId.isNullOrBlank()) {
+            result.error("INVALID_ARGS", "apiKey, tenantId, and userId must not be empty.", null)
             return
         }
 
         Log.d(tag, "Initializing SDK with apiKey: $apiKey")
-        SdkManager.initialize(context, apiKey, tenantId, userId, baseUrl) {status, message ->
+        SdkManager.initialize(context, apiKey, tenantId, userId) {status, message ->
             // Ensure the result is sent on the main thread, as Flutter requires it.
             activity?.runOnUiThread {
                 val response = mapOf("status" to status, "message" to message)
@@ -192,8 +191,7 @@ class AbleCreditPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
         val configMap = mapOf(
             "apiKey" to sdkConfig.apiKey,
             "tenantId" to sdkConfig.tenantId,
-            "userId" to sdkConfig.userId,
-            "baseUrl" to sdkConfig.baseUrl
+            "userId" to sdkConfig.userId
         )
         result.success(configMap)
     }

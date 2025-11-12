@@ -46,7 +46,6 @@ class _MyHomePageState extends State<MyHomePage> {
         apiKey: "c61352cc-8030-483c-a6bf-c8abea905d49",
         tenantId: "MUTHOOT-49211173", 
         userId: "shwe@gml.co",
-        baseUrl: "https://col-api-qa.ablecredit.com/api/v2/", 
       );
 
       final int status = result['status'];
