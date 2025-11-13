@@ -205,13 +205,13 @@ class AbleCreditPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
         Log.d(tag, "Recording audio for loan ID: $loanApplicationId")
         val intentContext = activity ?: context
 
-        // val uploadListener = object : UploadStatusListener {
-        //     override fun onStatusChanged(uniqueId: String, status: FileStatus, message: String?) {
-        //         Log.d(tag, "Audio upload status changed for $uniqueId: Status=${status.name}, Message=$message")
-        //     }
-        // }
+        val uploadListener = object : UploadStatusListener {
+            override fun onStatusChanged(uniqueId: String, status: FileStatus, message: String?) {
+                Log.d(tag, "Audio upload status changed for $uniqueId: Status=${status.name}, Message=$message")
+            }
+        }
 
-        SdkManager.recordAudio(intentContext, loanApplicationId)
+        SdkManager.recordAudio(intentContext, loanApplicationId, uploadListener)
         result.success(null)
     }
 

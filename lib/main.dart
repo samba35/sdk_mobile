@@ -78,7 +78,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // Example loan request payload. Keys must match the LoanRequest constructor in Kotlin.
     final loanRequest = {
-      "loan_reference": "LN-REF-20251017-1101",
+      "loan_reference": "LN-REF-20251017-1203",
       "client_unique_id": "CUST-20251017-1234",
       "product_id": "MUT-IND-3065",
       "branch_id": "ML1348",
@@ -283,11 +283,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   onPressed: _isInitialized && _lastLoanId != null ? _captureCollateralPhotos : null,
                   child: const Text('4c. Capture Collateral Photos'),
                 ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _isInitialized ? _getSdkConfig : null,
-                  child: const Text('5. Get SDK Config'),
-                ),
+                // const SizedBox(height: 12),
+                // ElevatedButton(
+                //   onPressed: _isInitialized ? _getSdkConfig : null,
+                //   child: const Text('5. Get SDK Config'),
+                // ),
                 const SizedBox(height: 40),
                 Text(
                   'Status:',
