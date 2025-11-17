@@ -6,11 +6,11 @@ import android.content.Intent
 import android.util.Log
 import androidx.annotation.NonNull
 import com.ablecredit.sdk.manager.SdkManager
-import com.ablecredit.sdk.model.LoanRequest
+//import com.ablecredit.sdk.model.LoanRequest
 import com.ablecredit.sdk.model.LoanResponse
-import com.ablecredit.sdk.model.BusinessProfile
-import com.ablecredit.sdk.model.LoanData
-import com.ablecredit.sdk.model.BorrowerDetails
+//import com.ablecredit.sdk.model.BusinessProfile
+//import com.ablecredit.sdk.model.LoanData
+//import com.ablecredit.sdk.model.BorrowerDetails
 import com.ablecredit.sdk.manager.SdkConfig 
 //import com.ablecredit.sdk.manager.UploadStatusListener
 import com.ablecredit.sdk.model.FileStatus
@@ -110,58 +110,15 @@ class AbleCreditPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
     }
 
     private fun handleCreateNewLoan(call: MethodCall, result: Result, context: Context) {
-        val payload = call.argument<Map<String, Any>>("loanRequest")
+        val payload = call.argument<Map<String, Any?>>("loanRequest")
         if (payload == null) {
             result.error("INVALID_ARGS", "loanRequest payload is required.", null)
             return
         }
 
         try {
-            // Parse BusinessProfile
-            val businessProfileMap = payload["business_profile"] as? Map<String, String>
-            val businessProfile = if (businessProfileMap != null) {
-                BusinessProfile(
-                    product = businessProfileMap["product"] ?: "",
-                    business_model = businessProfileMap["business_model"] ?: "",
-                    industry = businessProfileMap["industry"] ?: ""
-                )
-            } else {
-                result.error("INVALID_ARGS", "business_profile is missing or malformed.", null)
-                return
-            }
-
-            // Parse BorrowerDetails
-            val borrowerDetailsMap = (payload["data"] as? Map<String, Any>)?.get("borrower_details") as? Map<String, String>
-            val borrowerDetails = if (borrowerDetailsMap != null) {
-                BorrowerDetails(
-                    entity_type = borrowerDetailsMap["entity_type"] ?: "",
-                    name = borrowerDetailsMap["name"] ?: "",
-                    dob = borrowerDetailsMap["dob"] ?: "",
-                    mobile = borrowerDetailsMap["mobile"] ?: ""
-                )
-            } else {
-                result.error("INVALID_ARGS", "data.borrower_details is missing or malformed.", null)
-                return
-            }
-
-            // Parse LoanData
-            val loanData = LoanData(
-                borrower_details = borrowerDetails
-            )
-
-            // Construct LoanRequest
-            val loanRequest = LoanRequest(
-                loan_reference = payload["loan_reference"] as? String ?: "",
-                client_unique_id = payload["client_unique_id"] as? String ?: "",
-                product_id = payload["product_id"] as? String ?: "",
-                branch_id = payload["branch_id"] as? String ?: "",
-                source_system = payload["source_system"] as? String ?: "",
-                business_profile = businessProfile,
-                data = loanData
-            )
-
-            Log.d(tag, "Creating new loan case with payload: $loanRequest")
-            SdkManager.createNewLoanCase(context, loanRequest) { loanResponse ->
+            Log.d(tag, "Creating new loan case with payload: $payload")
+            SdkManager.createNewLoanCase(context, payload) { loanResponse ->
                 activity?.runOnUiThread {
                     if (loanResponse?.data?.application?._id != null) {
                         val applicationId = loanResponse.data.application._id
@@ -178,8 +135,8 @@ class AbleCreditPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
                 }
             }
         } catch (e: Exception) {
-            Log.e(tag, "Error creating LoanRequest or calling SDK", e)
-            result.error("PAYLOAD_ERROR", "Failed to process loan request payload: ${e.message}", null)
+            Log.e(tag, "Error calling SDK", e)
+            result.error("SDK_ERROR", "Failed to create new loan: ${e.message}", null)
         }
     }
 

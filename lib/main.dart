@@ -76,9 +76,9 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     setState(() => _status = 'Creating new loan...');
 
-    // Example loan request payload. Keys must match the LoanRequest constructor in Kotlin.
+    // Example loan request payload.
     final loanRequest = {
-      "loan_reference": "LN-REF-20251017-1203",
+      "loan_reference": "LN-REF-20251017-1205",
       "client_unique_id": "CUST-20251017-1234",
       "product_id": "MUT-IND-3065",
       "branch_id": "ML1348",
@@ -90,10 +90,38 @@ class _MyHomePageState extends State<MyHomePage> {
       },
       "data": {
         "borrower_details": {
+          "state_name": "karnataka",
           "entity_type": "individual",
           "name": "Shwetanka Srivastava",
           "dob": "24/01/1988",
-          "mobile": "8197837043"
+          "mobile": "8197837043",
+          "owner_of_business": "Yes"
+        },
+        "co_borrower_details": [
+          {
+            "entity_type": "individual",
+            "name": "Shwetanka Srivastava",
+            "dob": "24/01/1988",
+            "relation": "Brother",
+            "occupation": "IT Professional",
+            "owner_of_business": "No"
+          }
+        ],
+        "employment_details": {
+          "employer_name": "optimus",
+          "employer_contact_number": "9873654210",
+          "doj": "14/10/2020",
+          "nature_of_employment": "Full-Time",
+          "total_experience": "36",
+          "working_location": "#23, Bangalore",
+          "working_days_in_month": "28",
+          "per_day_earnings": "500",
+          "per_month_earnings": "30000"
+        },
+        "loan_details": {
+          "business_name": "trends",
+          "quantum": "500000",
+          "tenure": "24"
         }
       }
     };
