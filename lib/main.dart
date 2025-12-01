@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:developer'; // For log
 import 'package:permission_handler/permission_handler.dart';
-import 'ablecredit_sdk.dart';
+import 'package:sdk/ablecredit_sdk.dart';
+import 'package:sdk/models/loan_model.dart';
+import 'package:sdk/screens/home_screen.dart';
+import 'package:sdk/screens/loans_list_screen.dart';
+import 'package:sdk/theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,97 +18,92 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'AbleCredit SDK Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: const MyHomePage(title: 'AbleCredit SDK Integration'),
+      theme: AppTheme.lightTheme,
+      home: const MainContainer(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
+class MainContainer extends StatefulWidget {
+  const MainContainer({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MainContainer> createState() => _MainContainerState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  String _status = 'App loaded. Please initialize the SDK.';
+class _MainContainerState extends State<MainContainer> {
   bool _isInitialized = false;
-  String? _lastLoanId;
+  final List<LoanModel> _loans = [];
+  bool _isLoading = false;
 
-  // --- SDK Method Handlers ---
+  // --- SDK Actions ---
 
   Future<void> _initializeSdk() async {
-    setState(() => _status = 'Initializing...');
+    if (_isInitialized) return;
+
+    setState(() => _isLoading = true);
     try {
       final result = await AbleCreditSdk.initialize(
         apiKey: "c61352cc-8030-483c-a6bf-c8abea905d49",
-        tenantId: "MUTHOOT-49211173", 
+        tenantId: "MUTHOOT-49211173",
         userId: "shwe@gml.co",
       );
 
-      final int status = result['status'];
-      final String message = result['message'];
-
-      if (status == 1) {
-        setState(() {
-          _isInitialized = true;
-          _status = 'SDK Initialized Successfully: $message';
-        });
+      if (result['status'] == 1) {
+        setState(() => _isInitialized = true);
+        _showSnackBar('SDK Initialized Successfully');
       } else {
-        setState(() {
-          _isInitialized = false;
-          _status = 'SDK Initialization Failed: $message';
-        });
+        _showSnackBar(
+          'SDK Initialization Failed: ${result['message']}',
+          isError: true,
+        );
       }
-    } on PlatformException catch (e) {
-      setState(() => _status = 'Platform Error during init: ${e.message}');
     } catch (e) {
-      setState(() => _status = 'Error during init: $e');
+      _showSnackBar('Error initializing SDK: $e', isError: true);
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _createNewLoan() async {
+  Future<void> _createLoan() async {
     if (!_isInitialized) {
-      setState(() => _status = 'Please initialize the SDK first.');
-      return;
+      await _initializeSdk();
+      if (!_isInitialized) return;
     }
-    setState(() => _status = 'Creating new loan...');
 
-    // Example loan request payload.
+    setState(() => _isLoading = true);
+
+    // Hardcoded demo payload
     final loanRequest = {
-      "loan_reference": "LN-REF-20251017-1205",
-      "client_unique_id": "CUST-20251017-1234",
+      "loan_reference": "LN-REF-${DateTime.now().millisecondsSinceEpoch}",
+      "client_unique_id": "CUST-${DateTime.now().millisecondsSinceEpoch}",
       "product_id": "MUT-IND-3065",
       "branch_id": "ML1348",
       "source_system": "hotfoot",
       "business_profile": {
         "product": "LAP",
         "business_model": "Trading",
-        "industry": "Fashion Apparel"
+        "industry": "Fashion Apparel",
       },
       "data": {
         "borrower_details": {
           "state_name": "karnataka",
           "entity_type": "individual",
-          "name": "Shwetanka Srivastava",
+          "name": "Demo User",
           "dob": "24/01/1988",
           "mobile": "8197837043",
-          "owner_of_business": "Yes"
+          "owner_of_business": "Yes",
         },
         "co_borrower_details": [
           {
             "entity_type": "individual",
-            "name": "Shwetanka Srivastava",
+            "name": "Co-Borrower",
             "dob": "24/01/1988",
             "relation": "Brother",
             "occupation": "IT Professional",
-            "owner_of_business": "No"
-          }
+            "owner_of_business": "No",
+          },
         ],
         "employment_details": {
           "employer_name": "optimus",
@@ -116,223 +114,163 @@ class _MyHomePageState extends State<MyHomePage> {
           "working_location": "#23, Bangalore",
           "working_days_in_month": "28",
           "per_day_earnings": "500",
-          "per_month_earnings": "30000"
+          "per_month_earnings": "30000",
         },
         "loan_details": {
           "business_name": "trends",
           "quantum": "500000",
-          "tenure": "24"
-        }
-      }
+          "tenure": "24",
+        },
+      },
     };
 
     try {
-      final result = await AbleCreditSdk.createNewLoan(loanRequest: loanRequest);
+      final result = await AbleCreditSdk.createNewLoan(
+        loanRequest: loanRequest,
+      );
       if (result != null) {
+        final newLoan = LoanModel(
+          id: result['applicationId'] ?? 'UNKNOWN',
+          reference: loanRequest['loan_reference'] as String,
+          clientName: (loanRequest['data'] as Map)['borrower_details']['name'],
+          amount: (loanRequest['data'] as Map)['loan_details']['quantum'],
+          status: 'Created',
+          createdAt: DateTime.now(),
+        );
+
         setState(() {
-          _lastLoanId = result['applicationId'];
-          _status = 'Loan created successfully! ID: $_lastLoanId';
+          _loans.add(newLoan);
         });
-        log('Loan creation response: $result');
+
+        _showSnackBar('Loan Created Successfully!');
       } else {
-        setState(() => _status = 'Loan creation failed: SDK returned null.');
+        _showSnackBar('Failed to create loan', isError: true);
       }
-    } on PlatformException catch (e) {
-      setState(() => _status = 'Platform Error creating loan: ${e.message}');
     } catch (e) {
-      setState(() => _status = 'Error creating loan: $e');
+      _showSnackBar('Error creating loan: $e', isError: true);
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
-
-
-  Future<void> _recordAudio() async {
-    if (!_isInitialized) {
-      setState(() => _status = 'Please initialize the SDK first.');
-      return;
-    }
-    if (_lastLoanId == null) {
-      setState(() => _status = 'Create a loan first to get an ID for audio recording.');
-      return;
-    }
-    setState(() => _status = 'Recording audio...');
+  Future<void> _clearSdk() async {
+    setState(() => _isLoading = true);
     try {
-      await AbleCreditSdk.recordAudio(loanApplicationId: _lastLoanId!);
-      setState(() => _status = 'Audio recording initiated.');
-    } on PlatformException catch (e) {
-      setState(() => _status = 'Platform Error recording audio: ${e.message}');
+      await AbleCreditSdk.clear();
+      setState(() {
+        _isInitialized = false;
+        _loans.clear();
+      });
+      _showSnackBar('SDK Cleared');
     } catch (e) {
-      setState(() => _status = 'Error recording audio: $e');
+      _showSnackBar('Error clearing SDK: $e', isError: true);
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
-
-
-  Future<void> _getSdkConfig() async {
-    if (!_isInitialized) {
-      setState(() => _status = 'Please initialize the SDK first.');
-      return;
-    }
-    setState(() => _status = 'Getting SDK config...');
-    try {
-      final config = await AbleCreditSdk.getSdkConfig();
-      setState(() => _status = 'SDK Config: ${config.toString()}');
-      log('SDK Config: $config');
-    } on PlatformException catch (e) {
-      setState(() => _status = 'Platform Error getting config: ${e.message}');
-    } catch (e) {
-      setState(() => _status = 'Error getting config: $e');
-    }
-  }
-
-  Future<void> _captureFamilyPhotos() async {
-    if (!_isInitialized) {
-      setState(() => _status = 'Please initialize the SDK first.');
-      return;
-    }
-    if (_lastLoanId == null) {
-      setState(() => _status = 'Create a loan first to get an ID for photo capture.');
-      return;
-    }
-
-    if (await _handleCameraPermission()) {
-      setState(() => _status = 'Capturing family photos...');
-      try {
-        await AbleCreditSdk.captureFamilyPhotos(loanApplicationId: _lastLoanId!);
-        setState(() => _status = 'Family photo capture initiated.');
-      } on PlatformException catch (e) {
-        setState(() => _status = 'Platform Error capturing photos: ${e.message}');
-      } catch (e) {
-        setState(() => _status = 'Error capturing photos: $e');
-      }
-    }
-  }
-
-  Future<void> _captureBusinessPhotos() async {
-    if (!_isInitialized) {
-      setState(() => _status = 'Please initialize the SDK first.');
-      return;
-    }
-    if (_lastLoanId == null) {
-      setState(() => _status = 'Create a loan first to get an ID for photo capture.');
-      return;
-    }
-
-    if (await _handleCameraPermission()) {
-      setState(() => _status = 'Capturing business photos...');
-      try {
-        await AbleCreditSdk.captureBusinessPhotos(loanApplicationId: _lastLoanId!);
-        setState(() => _status = 'Business photo capture initiated.');
-      } on PlatformException catch (e) {
-        setState(() => _status = 'Platform Error capturing photos: ${e.message}');
-      } catch (e) {
-        setState(() => _status = 'Error capturing photos: $e');
-      }
-    }
-  }
-
-  Future<void> _captureCollateralPhotos() async {
-    if (!_isInitialized) {
-      setState(() => _status = 'Please initialize the SDK first.');
-      return;
-    }
-    if (_lastLoanId == null) {
-      setState(() => _status = 'Create a loan first to get an ID for photo capture.');
-      return;
-    }
-
-    if (await _handleCameraPermission()) {
-      setState(() => _status = 'Capturing collateral photos...');
-      try {
-        await AbleCreditSdk.captureCollateralPhotos(loanApplicationId: _lastLoanId!);
-        setState(() => _status = 'Collateral photo capture initiated.');
-      } on PlatformException catch (e) {
-        setState(() => _status = 'Platform Error capturing photos: ${e.message}');
-      } catch (e) {
-        setState(() => _status = 'Error capturing photos: $e');
-      }
-    }
-  }
-
-  Future<bool> _handleCameraPermission() async {
-    var status = await Permission.camera.status;
-    if (!status.isGranted) {
-      var result = await Permission.camera.request();
+  Future<bool> _checkPermissions() async {
+    final cameraStatus = await Permission.camera.status;
+    if (!cameraStatus.isGranted) {
+      final result = await Permission.camera.request();
       if (!result.isGranted) {
-        setState(() {
-          _status = 'Camera permission is required to capture photos.';
-        });
+        _showSnackBar('Camera permission is required', isError: true);
         return false;
       }
     }
+
+    final audioStatus = await Permission.microphone.status;
+    if (!audioStatus.isGranted) {
+      final result = await Permission.microphone.request();
+      if (!result.isGranted) {
+        _showSnackBar('Microphone permission is required', isError: true);
+        return false;
+      }
+    }
+
     return true;
+  }
+
+  Future<void> _recordAudio(LoanModel loan) async {
+    if (!await _checkPermissions()) return;
+    try {
+      await AbleCreditSdk.recordAudio(loanApplicationId: loan.id);
+    } catch (e) {
+      _showSnackBar('Error recording audio: $e', isError: true);
+    }
+  }
+
+  Future<void> _captureFamilyPhotos(LoanModel loan) async {
+    if (!await _checkPermissions()) return;
+    try {
+      await AbleCreditSdk.captureFamilyPhotos(loanApplicationId: loan.id);
+    } catch (e) {
+      _showSnackBar('Error capturing family photos: $e', isError: true);
+    }
+  }
+
+  Future<void> _captureBusinessPhotos(LoanModel loan) async {
+    if (!await _checkPermissions()) return;
+    try {
+      await AbleCreditSdk.captureBusinessPhotos(loanApplicationId: loan.id);
+    } catch (e) {
+      _showSnackBar('Error capturing business photos: $e', isError: true);
+    }
+  }
+
+  Future<void> _captureCollateralPhotos(LoanModel loan) async {
+    if (!await _checkPermissions()) return;
+    try {
+      await AbleCreditSdk.captureCollateralPhotos(loanApplicationId: loan.id);
+    } catch (e) {
+      _showSnackBar('Error capturing collateral photos: $e', isError: true);
+    }
+  }
+
+  // --- Navigation ---
+
+  void _navigateToViewLoans() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LoansListScreen(
+          loans: _loans,
+          onRecordAudio: _recordAudio,
+          onCaptureFamilyPhotos: _captureFamilyPhotos,
+          onCaptureBusinessPhotos: _captureBusinessPhotos,
+          onCaptureCollateralPhotos: _captureCollateralPhotos,
+        ),
+      ),
+    );
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppTheme.errorColor : AppTheme.successColor,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                ElevatedButton(
-                  onPressed: _initializeSdk,
-                  child: const Text('1. Initialize SDK'),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _isInitialized ? _createNewLoan : null,
-                  child: const Text('2. Create New Loan'),
-                ),
-                const SizedBox(height: 12),
-
-                const SizedBox(height: 12),
-                ElevatedButton( 
-                  onPressed: _isInitialized && _lastLoanId != null ? _recordAudio : null,
-                  child: const Text('3. Record Audio'),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _isInitialized && _lastLoanId != null ? _captureFamilyPhotos : null,
-                  child: const Text('4a. Capture Family Photos'),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _isInitialized && _lastLoanId != null ? _captureBusinessPhotos : null,
-                  child: const Text('4b. Capture Business Photos'),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _isInitialized && _lastLoanId != null ? _captureCollateralPhotos : null,
-                  child: const Text('4c. Capture Collateral Photos'),
-                ),
-                // const SizedBox(height: 12),
-                // ElevatedButton(
-                //   onPressed: _isInitialized ? _getSdkConfig : null,
-                //   child: const Text('5. Get SDK Config'),
-                // ),
-                const SizedBox(height: 40),
-                Text(
-                  'Status:',
-                  style: Theme.of(context).textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _status,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
-          ),
+    return Stack(
+      children: [
+        HomeScreen(
+          onCreateLoan: _createLoan,
+          onViewLoans: _navigateToViewLoans,
+          onClearSdk: _clearSdk,
+          isSdkInitialized: _isInitialized,
+          loanCount: _loans.length,
         ),
-      ),
+        if (_isLoading)
+          Container(
+            color: Colors.black54,
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+      ],
     );
   }
 }

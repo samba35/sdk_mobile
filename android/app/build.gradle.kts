@@ -54,7 +54,7 @@ dependencies {
 
 android {
     namespace = "com.example.sdk"
-    compileSdk = 34
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -76,7 +76,7 @@ android {
         applicationId = "com.example.sdk"
         minSdk = flutter.minSdkVersion
         //targetSdk = flutter.targetSdkVersion
-        targetSdk = 33
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
