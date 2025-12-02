@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:sdk/models/loan_model.dart';
 import 'package:sdk/theme.dart';
 
@@ -9,6 +8,7 @@ class LoansListScreen extends StatelessWidget {
   final Function(LoanModel) onCaptureFamilyPhotos;
   final Function(LoanModel) onCaptureBusinessPhotos;
   final Function(LoanModel) onCaptureCollateralPhotos;
+  final Function(LoanModel) onGenerateReport;
 
   const LoansListScreen({
     super.key,
@@ -17,6 +17,7 @@ class LoansListScreen extends StatelessWidget {
     required this.onCaptureFamilyPhotos,
     required this.onCaptureBusinessPhotos,
     required this.onCaptureCollateralPhotos,
+    required this.onGenerateReport,
   });
 
   @override
@@ -42,6 +43,7 @@ class LoansListScreen extends StatelessWidget {
                   onCaptureBusinessPhotos: () => onCaptureBusinessPhotos(loan),
                   onCaptureCollateralPhotos: () =>
                       onCaptureCollateralPhotos(loan),
+                  onGenerateReport: () => onGenerateReport(loan),
                 );
               },
             ),
@@ -55,6 +57,7 @@ class _LoanCard extends StatelessWidget {
   final VoidCallback onCaptureFamilyPhotos;
   final VoidCallback onCaptureBusinessPhotos;
   final VoidCallback onCaptureCollateralPhotos;
+  final VoidCallback onGenerateReport;
 
   const _LoanCard({
     required this.loan,
@@ -62,6 +65,7 @@ class _LoanCard extends StatelessWidget {
     required this.onCaptureFamilyPhotos,
     required this.onCaptureBusinessPhotos,
     required this.onCaptureCollateralPhotos,
+    required this.onGenerateReport,
   });
 
   @override
@@ -143,6 +147,12 @@ class _LoanCard extends StatelessWidget {
                   icon: Icons.home_work,
                   label: 'Collateral',
                   onPressed: onCaptureCollateralPhotos,
+                ),
+                _ActionButton(
+                  icon: Icons.assignment,
+                  label: 'Report',
+                  onPressed: onGenerateReport,
+                  //isPrimary: true,
                 ),
               ],
             ),

@@ -78,6 +78,7 @@ class AbleCreditPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
             "captureFamilyPhotos" -> handleCaptureFamilyPhotos(call, result, currentContext)
             "captureBusinessPhotos" -> handleCaptureBusinessPhotos(call, result, currentContext)
             "captureCollateralPhotos" -> handleCaptureCollateralPhotos(call, result, currentContext)
+            "generateReport" -> handleGenerateReport(call, result, currentContext)
             "clear" -> handleClear(result, currentContext)
             else -> result.notImplemented()
         }
@@ -212,5 +213,27 @@ class AbleCreditPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Activit
         Log.d(tag, "Clearing SDK configuration.")
         SdkManager.clear(context)
         result.success(null)
+    }
+
+    private fun handleGenerateReport(call: MethodCall, result: Result, context: Context) {
+        val loanApplicationId = call.argument<String>("loanApplicationId")
+        if (loanApplicationId.isNullOrBlank()) {
+            result.error("INVALID_ARGS", "loanApplicationId must not be empty.", null)
+            return
+        }
+        Log.d(tag, "Generating report for loan ID: $loanApplicationId")
+        val intentContext = activity ?: context
+        
+        SdkManager.generateReportForApplication(intentContext, loanApplicationId) { success ->
+            activity?.runOnUiThread {
+                if (success) {
+                    Log.d(tag, "Report generation triggered successfully")
+                    result.success(null)
+                } else {
+                    Log.e(tag, "Failed to trigger report generation")
+                    result.error("REPORT_FAILED", "Failed to trigger report generation", null)
+                }
+            }
+        }
     }
 }

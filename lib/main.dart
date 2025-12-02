@@ -227,6 +227,16 @@ class _MainContainerState extends State<MainContainer> {
     }
   }
 
+  Future<void> _generateReport(LoanModel loan) async {
+    try {
+      await AbleCreditSdk.generateReport(loanApplicationId: loan.id);
+      _showSnackBar('Report generation triggered');
+    } catch (e) {
+      print('Error generating report: $e');
+      _showSnackBar('Error generating report: $e', isError: true);
+    }
+  }
+
   // --- Navigation ---
 
   void _navigateToViewLoans() {
@@ -239,6 +249,7 @@ class _MainContainerState extends State<MainContainer> {
           onCaptureFamilyPhotos: _captureFamilyPhotos,
           onCaptureBusinessPhotos: _captureBusinessPhotos,
           onCaptureCollateralPhotos: _captureCollateralPhotos,
+          onGenerateReport: _generateReport,
         ),
       ),
     );

@@ -84,12 +84,8 @@ class AbleCreditSdk {
     return result as Map<dynamic, dynamic>?;
   }
 
-
-
   /// Records audio for a given loan application.
-  static Future<void> recordAudio({
-    required String loanApplicationId,
-  }) async {
+  static Future<void> recordAudio({required String loanApplicationId}) async {
     await _channel.invokeMethod('recordAudio', {
       'loanApplicationId': loanApplicationId,
     });
@@ -117,6 +113,15 @@ class AbleCreditSdk {
     required String loanApplicationId,
   }) async {
     await _channel.invokeMethod('captureCollateralPhotos', {
+      'loanApplicationId': loanApplicationId,
+    });
+  }
+
+  /// Generates a report for a given loan application.
+  static Future<void> generateReport({
+    required String loanApplicationId,
+  }) async {
+    await _channel.invokeMethod('generateReport', {
       'loanApplicationId': loanApplicationId,
     });
   }
